@@ -7,8 +7,8 @@ class RunFooter extends Component {
 			<footer>
 				<button className="btn btn-danger stop" onClick={this.props.handleStop}>stop</button>
 				<button className="btn btn-success start" onClick={this.props.handleStart}>start</button>
-				<button className="btn btn-warning pause">pause</button>
-				<button className="btn btn-primary return">return</button>
+				{/* <button className="btn btn-warning pause">pause</button>
+				<button className="btn btn-primary return">return</button> */}
 			</footer>
 		)
 	}

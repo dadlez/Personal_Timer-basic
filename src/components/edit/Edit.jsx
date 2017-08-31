@@ -3,14 +3,15 @@ import { Button } from 'react-bootstrap/lib';
 import EditHeader from './EditHeader.jsx';
 import EditFooter from './EditFooter.jsx';
 import Tree from './../sets/Tree.jsx';
-import AddLoop from './../edit/AddLoop.jsx';
 import AddTimer from './../edit/AddTimer.jsx';
 
 class Edit extends Component {
 	render() {
 		return (
 			<div className="edit">
-				<EditHeader />
+				<EditHeader
+					editTimersList={this.props.editTimersList}
+				/>
 				<Tree
 					times={this.props.times}
 					edit={true}
@@ -18,11 +19,6 @@ class Edit extends Component {
 				/>
 				<hr />
 				<div className="addElement">
-					<AddLoop
-						id="mainLoop"
-						times={this.props.times}
-						editTimes={this.props.editTimes}
-					/>
 					<AddTimer
 						id="mainLoop"
 						times={this.props.times}

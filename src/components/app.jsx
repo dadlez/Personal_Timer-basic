@@ -14,13 +14,10 @@ class App extends Component {
 
 		this.state = {
 			view: "edit",
+			timers: [],
 			times: [],
 			run: false,
-			timers: [],
-			loops: [],
-			sequence: [],
-			activeTimer: {},
-			activeLoop: {}
+			activeTimer: {}
 		};
 		this.timerInterval = 0;
 	}
@@ -29,252 +26,71 @@ class App extends Component {
 		this.setState({ times: newTimes })
 	}
 
-	makeItemsList(times) {
-		let sequence = [];
-
-		function loopTimes(arr) {
-			arr.forEach(e => {
-				sequence.push(e);
-
-				if (e.type === "loop") {
-					if (e.content.length > 0) {
-						loopTimes(e.content);
-					}
-				}
-			});
-		}
-
-		loopTimes(times);
-
-		return sequence;
+	editTimersList = (newTimers) => {
+		this.setState({ timers: this.state.timers.push(newTimers) })
 	}
 
-	updateTime(e) {
-		let newActiveTimer = this.state.activeTimer;
+	updateState() {
+		let activeTimer = this.state.activeTimer;
+		let times = this.state.times;
 
-		if (e.seconds === 0 && e.minutes === 0) {
-			console.log("switch timer");
-			// find next timer in state.sequence and set it as active
-			const sequence = this.state.sequence;
-			const len = sequence.length;
-			let i=0;
+		if (activeTimer.seconds === 0 && activeTimer.minutes === 0) {
+			// switch timer or stop it if it's the last timer
+			let i = 0;
+			let len = times.length;
 
 			while (i < len) {
-				console.log("old timer sequencw index", i);
-				if (e.id === this.state.activeTimer.id) {
-					let j=i+1;
-					while (j < len) {
-						console.log("new timer sequencw index", j);
-						if (sequence[j].type === "timer") {
-							newActiveTimer = sequence[j];
-							j = len;
-							i = len;
-							console.log("new activeTimer", newActiveTimer);
-						}
-						j++;
-					}
+				if (i === len - 1) {
+					this.setState({ run: false });
+				} else if (times[i].id === activeTimer.id) {
+					activeTimer = times[i + 1];
+					i = len;
 				}
 				i++;
 			}
-		} else if (e.seconds < 1) {
-			e.minutes -= 1;
-			e.seconds = 59;
+		} else if (activeTimer.seconds < 1) {
+			activeTimer.minutes -= 1;
+			activeTimer.seconds = 59;
 		} else {
-			e.seconds -= 1;
+			activeTimer.seconds -= 1;
 		}
-		console.log("updateTime", e);
-		return [e, newActiveTimer];
-	}
-
-	// !!! bug
-	// przepisać z dwóch list timers i loops na jedną zmienną sequence
-	updateItem(e) {
-		let newActiveTimer = this.state.activeTimer;
-		let newActiveLoop = this.state.activeLoop;
-
-		function switchActiveLoop() {
-			let loops = [];
-
-			// make loops sequence
-			function loopTimes(arr) {
-				arr.forEach(e => {
-					if (e.type === "loop") {
-						loops.push(e);
-
-						if (e.content.length > 0) {
-							for (let i = 0; i < e.reps; i++) {
-								loopTimes(e.content);
-							}
-						}
-					}
-				});
-			}
-
-			loopTimes(this.state.times);
-			print("loop sequence", loops)
-			// find active loop and set next as active
-			i = 0;
-			while (i < loops.length) {
-				if (loops[i].id === newActiveLoop.id) {
-					newActiveLoop = loops[i + 1];
-					i = loops.length;
-				}
-				i++;
-			}
-			return newActiveLoop;
-		}
-
-		// main switching function
-		if (e.type === "loop") {
-			if (e.id === this.state.activeLoop.id) {
-				if (this.state.activeLoop.reps > 0) {
-					// reduce number of reps in active loop
-					e.reps -= 1;
-					newActiveLoop = e;
-				} else {
-					//set next loop as active
-					console.log("swich active loop");
-					newActiveLoop = switchActiveLoop();
-				}
-			} else if (e.content > 0) {
-				e.content = e.content.map(innerE => {
-					let newE = {};
-					[ newE, newActiveTimer, newActiveLoop ] = this.updateItem(innerE);
-					console.log("updated inner loop", newE);
-					return newE;
-				});
-			}
-		} else {
-			// handle timer update
-			if (e.id === this.state.activeTimer.id) {
-				[ newE, newActiveTimer ] = this.updateTime(e);
-				e = newE;
-			}
-		}
-		return [e, newActiveTimer, newActiveLoop];
-	}
-
-	updateState(times) {
-		let newActiveTimer = this.state.activeTimer;
-		let newActiveLoop = this.state.activeLoop;
-
-
-		console.log(newActiveTimer);
-		console.log(newActiveLoop);
-
-		times.map(e => {
-			console.log("times element", e.type, e.id);
-
-			if (e.type === "loop") {
-				if (e.id === this.state.activeLoop.id) {
-					console.log("active loop");
-					// reduce number of reps in active loop
-					if (this.state.activeLoop.reps > 0) {
-						e.reps -= 1;
-						console.log("reduced reps in loop", newActiveLoop);
-
-						// look through this loop content to update inner elements
-						e.content = e.content.map(innerE => {
-							let newE = {};
-							[ newE, newActiveTimer, newActiveLoop ] = this.updateItem(innerE);
-							console.log("updated loop content", newE);
-							return newE;
-						});
-						newActiveLoop = e;
-					//set next loop as active
-					} else {
-						console.log("switch active loop");
-						this.state.loops.forEach((loop, i) => {
-							if (loop.id === this.state.activeLoop.id) {
-								newActiveLoop = this.state.loops[i + 1];
-							}
-						});
-					}
-				} else if (e.content > 0) {
-					e.content = e.content.map(innerE => {
-						let newE = {};
-						[ newE, newActiveTimer, newActiveLoop ] = this.updateItem(innerE);
-						console.log("updated inner loop", newE);
-						return newE;
-					});
-				}
-
-			// handle timer update
-			} else {
-				if (e.id === this.state.activeTimer.id) {
-					let newE = {};
-
-					[ newE, newActiveTimer ] = this.updateTime(e);
-					e = newE;
-				}
-			}
-			return e;
-		});
-		let sequence = this.makeItemsList(times);
 
 		this.setState({
-			times: times,
-			sequence: sequence,
-			activeTimer: newActiveTimer,
-			activeLoop: newActiveLoop
+			times,
+			activeTimer
 		});
 	}
 
 	startInterval() {
 		this.timerInterval = setInterval(() => {
-			this.updateState(this.state.times);
+			this.updateState();
 		}, 1000);
 	}
 
 	handleStart = (event) => {
-		// set active elements in sequence and start timer
-		console.log("start timer");
-
 		event.preventDefault();
+		let activeTimer = this.state.activeTimer;
+		const times = this.state.times;
 
 		function isEmpty(obj) {
 			for (let x in obj) { return false; }
 			return true;
 		}
 
-		let newActiveLoop = this.state.activeLoop;
-		let newActiveTimer = this.state.activeTimer;
-
-		let sequence = this.makeItemsList(this.state.times);
-
 		//set new active timer
-		if (isEmpty(this.state.activeTimer)) {
-			console.log("active timer empty, will be set to default");
-;
-			if (this.state.times.length > 0) {
+		if (isEmpty(activeTimer)) {
+			if (times.length > 0) {
+				activeTimer = times[0];
 
-				console.log("sequence", sequence);
-				console.log("sequence length", sequence.length);
-				if (sequence.length > 0) {
-					const len = sequence.length;
-					let i = 0;
-					let parentLoop = {};
-
-					while (i < len) {
-						if (sequence[i].type === "loop")
-						if (sequence[i].type == "timer") {
-							newActiveTimer = sequence[i];
-							i = len;
-							console.log("set activeTimer", newActiveTimer);
-						}
-						i++;
-					}
-				}
 			}
 		}
 
 		this.setState({
 			run: true,
-			activeTimer: newActiveTimer,
-			activeLoop: newActiveLoop,
-			sequence: sequence
+			activeTimer
 		});
 	}
+
 
 	handleStop = (event) => {
 		event.preventDefault();
@@ -289,25 +105,42 @@ class App extends Component {
 
 
 	renderView(view) {
-		if (this.state.view === "edit") {
-			return(
-				<Edit
-					times={this.state.times}
-					run={this.state.run}
-					editTimes={this.editTimes}
-					changeView={this.changeView}
-				/>
-			)
-		} else if (this.state.view === "run") {
-			return (
-				<Run
-					times={this.state.times}
-					run={this.state.run}
-					handleStart={this.handleStart}
-					handleStop={this.handleStop}
-					changeView={this.changeView}
-				/>
-			)
+		switch (this.state.view) {
+			case "start":
+				return(
+					<Start
+						changeView={this.changeView}
+						timers={this.state.timers}
+					/>
+				)
+				break;
+
+			case "edit":
+				return(
+					<Edit
+						times={this.state.times}
+						run={this.state.run}
+						editTimes={this.editTimes}
+						changeView={this.changeView}
+					/>
+				)
+				break;
+
+			case "run":
+				return (
+					<Run
+						times={this.state.times}
+						run={this.state.run}
+						handleStart={this.handleStart}
+						handleStop={this.handleStop}
+						changeView={this.changeView}
+					/>
+				)
+				break;
+
+			default:
+				return(<div>view error</div>)
+
 		}
 	}
 
